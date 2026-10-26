@@ -1,0 +1,14 @@
+{
+  "name": "Floor Planner",
+  "short_name": "Floor Planner",
+  "description": "Drag-and-drop warehouse floor plans that work offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#E4E6E3",
+  "theme_color": "#F2C200",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

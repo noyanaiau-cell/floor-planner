@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#F2C200">
+<link rel="icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floor Planner</title>
+<style>
+:root{--bg:#E4E6E3;--card:#F6F7F5;--line:#D3D7D2;--ink:#1C2126;--ink2:#4E5760;--ink3:#7C858D;--accent:#0B6BCB;--yellow:#F2C200;--ok:#1E8A4C;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#121518;--card:#1A1E22;--line:#2F353B;--ink:#E7EAEE;--ink2:#AEB6BE;--ink3:#7F8891;--accent:#3D8EF0;--ok:#4CC282;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:grid;place-items:center;padding:24px 16px}
+main{width:100%;max-width:520px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.mark{width:42px;height:42px;border-radius:10px;background:var(--yellow);display:grid;place-items:center;flex:none}
+h1{font-size:23px;margin:0;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:var(--ink3);font-size:13.5px}
+.sites{display:grid;gap:10px}
+a.site{display:flex;justify-content:space-between;align-items:center;gap:12px;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+a.site:hover,a.site:focus-visible{border-color:var(--accent);outline:none}
+a.site b{display:block;font-size:16.5px}
+a.site span{font-size:13.5px;color:var(--ink3)}
+a.site i{font-style:normal;color:var(--accent);font-weight:600;white-space:nowrap}
+.info{margin-top:16px;display:grid;gap:6px;font-size:13.5px;color:var(--ink2)}
+.info div{display:flex;gap:8px;align-items:flex-start}
+.info b{color:var(--ok)}
+.install{margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;height:38px;padding:0 16px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:600}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note{font-size:12.5px;color:var(--ink3)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="mark" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 18 18" fill="none" stroke="#2A2200" stroke-width="1.8"><path d="M2 16V6l7-4 7 4v10"/><path d="M5 16v-6h8v6"/></svg></div>
+    <div><h1>Floor Planner</h1><p class="sub">Drag-and-drop warehouse layouts</p></div>
+  </div>
+  <div class="sites">
+    
+    <a class="site" href="sem1.html"><div><b>SEM1 floor planner</b><span>Belt with 28 van bays, yard, trucks, G-cans</span></div><i>Open →</i></a>
+    <a class="site" href="sem2.html"><div><b>SEM2 floor planner</b><span>Main sort floor · vans, belt, G-cans, walkways</span></div><i>Open →</i></a>
+  </div>
+  <div class="info">
+    <div><b>✓</b><span>Works offline: once opened, this page and both planners keep working with no internet.</span></div>
+    <div><b>✓</b><span>Private: your layouts are saved only in this browser on this device and are never sent anywhere.</span></div>
+    <div><b>✓</b><span>Share a layout with <i style="font-style:normal">More → Save layout file to share</i>, or download the plan as an image.</span></div>
+  </div>
+  <div class="install">
+    <button id="inst" hidden>Install as an app</button>
+    <span class="note" id="offline-note">Preparing offline use…</span>
+  </div>
+</main>
+<script>
+let deferred = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; document.getElementById("inst").hidden = false; });
+document.getElementById("inst").onclick = async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; document.getElementById("inst").hidden = true; };
+const note = document.getElementById("offline-note");
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")){
+  navigator.serviceWorker.register("sw.js").then(() => navigator.serviceWorker.ready).then(() => { note.textContent = "Ready to use offline on this device."; }).catch(() => { note.textContent = "Offline use isn't available in this browser."; });
+} else note.textContent = "";
+</script>
+</body>
+</html>
