@@ -431,7 +431,7 @@ kbd{font-family:var(--f-mono);font-size:10.5px;background:var(--panel-2);border:
 const WORLD = {x:-4, y:-5, w:106, h:82};
 const OUTLINE = "M0 24H62V2H98V71H0Z";
 const RECTS = [{x:0,y:24,w:98,h:47},{x:62,y:2,w:36,h:69}];
-const BELT = {x:7.5, y:51.5, w:78.5, h:7};
+const BELT = {x:7.5, y:52.9, w:78.5, h:4.2}; // 40% narrower than the sketch (was y 51.5, h 7)
 const CLEAR = 3; // keep-clear depth in front of doors
 const DOORS = [
   {id:"fd1", name:"Fire door",          kind:"fire",   x1:7,    x2:10,  wall:"top"},
@@ -445,8 +445,8 @@ const doorZone = d => d.wall==="top" ? {x:d.x1, y:24, w:d.x2-d.x1, h:CLEAR} : {x
 
 /* ───────── Item types ───────── */
 const T = {
-  gcan:      {name:"G-Can",            desc:"Big cage",                 w:5.7, h:3.3, solid:true},
-  doxcage:   {name:"Dox cage",         desc:"Small cage",               w:2.4, h:2.4, solid:true},
+  gcan:      {name:"G-Can",            desc:"Big cage",                 w:4.7, h:3.2, solid:true},
+  doxcage:   {name:"Dox cage",         desc:"Small cage",               w:2.04, h:2.04, solid:true},
   doxarea:   {name:"Dox area",         desc:"Floor zone",               w:10,  h:8,   solid:false},
   forklift:  {name:"Forklift",         desc:"Parking spot",             w:4.4, h:1.7, solid:true},
   van:       {name:"Van",              desc:"Vehicle",                  w:2.1, h:5.6, solid:true},
@@ -473,7 +473,7 @@ const START = [{"group":"","h":14.4,"id":"i1","label":"Dox sort area (import)","
 function baseline(){ return JSON.parse(JSON.stringify(START)); }
 
 /* ───────── Layout upgrades (v2: walkways, crossings, loading zone, drivers, operation agents) ───────── */
-const LAYOUT_V = 4;
+const LAYOUT_V = 5;
 function walkwaySet(){
   const W = 1.6, out = [];
   const rect = (id, type, x, y, w, h, label) => out.push({id, type, x, y, w, h, r:0, label, locked:false, note:"", group:"walkways"});
@@ -528,6 +528,17 @@ function migrate(list, fromV = 1){
     // trucks 20% bigger: grow any truck still at the old default size, keeping its centre
     out.forEach(i => { if (i.type === "truck" && i.w === 2.5 && i.h === 9.5){
       const cx = i.x + i.w/2, cy = i.y + i.h/2; i.w = T.truck.w; i.h = T.truck.h; i.x = r2(cx - i.w/2); i.y = r2(cy - i.h/2); } });
+  }
+  if (fromV < 5){
+    const resize = (i, w, h) => { const cx = i.x + i.w/2, cy = i.y + i.h/2; i.w = r2(w); i.h = r2(h); i.x = r2(cx - i.w/2); i.y = r2(cy - i.h/2); };
+    out.forEach(i => {
+      if (i.type === "gcan") resize(i, T.gcan.w, T.gcan.h);              // G-cans 4.7 wide x 3.2 long
+      if (i.type === "doxcage") resize(i, i.w*.85, i.h*.85);             // dox cages 15% smaller
+      // belt 40% narrower (y 51.5–58.5 -> 52.9–57.1): things lined up beside it move in with it
+      const b = aabb(i);
+      if (b.y >= 40 && b.y + b.h <= 51.55) i.y = r2(i.y + 1.4);
+      else if (b.y >= 58.45 && b.y + b.h <= 71.5) i.y = r2(i.y - 1.4);
+    });
   }
   return out;
 }
@@ -712,7 +723,7 @@ function renderStructure(){
   // belt
   const B = BELT; let rolls = ""; for (let x=B.x+.6; x<B.x+B.w-.3; x+=.6) rolls += `<line class="belt-roll" x1="${x}" y1="${B.y+.35}" x2="${x}" y2="${B.y+B.h-.35}"/>`;
   s += `<g><rect class="belt-body" x="${B.x}" y="${B.y}" width="${B.w}" height="${B.h}"/>${rolls}`+
-       `<rect class="belt-body" x="${B.x+14}" y="${B.y+2.2}" width="${B.w-28}" height="2.6" rx=".2"/>`+
+       `<rect class="belt-body" x="${B.x+14}" y="${r2(B.y+B.h*.3)}" width="${B.w-28}" height="${r2(B.h*.4)}" rx=".2"/>`+
        `<rect class="belt-rail" x="${B.x}" y="${B.y}" width="${B.w}" height=".3"/><rect class="belt-rail" x="${B.x}" y="${B.y+B.h-.3}" width="${B.w}" height=".3"/>`+
        `<text class="belt-lbl" x="${B.x+B.w/2}" y="${B.y+B.h/2-.1}" text-anchor="middle">AUTOMATIC BELT · CONVEYOR</text>`+
        `<text class="belt-sub" x="${B.x+B.w/2}" y="${B.y+B.h/2+1.05}" text-anchor="middle">FIXED — PART OF THE BUILDING</text>`+
@@ -1299,7 +1310,7 @@ function setupAI(sample){
     const prompt =
 `You rearrange items on a parcel depot floor plan. Units are metres. x grows to the right, y grows downward ("up/top/north" = smaller y, toward the roller doors).
 BUILDING (L-shape): main hall x 0–98, y 24–71; plus a wing x 62–98, y 2–24. Nothing may sit outside these.
-FIXED CONVEYOR BELT (never place anything on it): x 7.5–86, y 51.5–58.5. "Left of the belt" = x < 7.5 or near its left end; "right end" = near x 86; "north side" = y just below 51.5; "south side" = y just above 58.5.
+FIXED CONVEYOR BELT (never place anything on it): x 7.5–86, y 52.9–57.1. "Left of the belt" = x < 7.5 or near its left end; "right end" = near x 86; "north side" = y just below 52.9; "south side" = y just above 57.1.
 DOORS on top wall y=24: fire door x7–10, truck roller door x11–27, van roller door x27.5–43, entry door x43.5–45.5. Fire doors on bottom wall y=71 at x50.5–53.5 and x89–92. Yellow walkways and crossings are floor paths: keep them clear of solid items where possible. Keep ${CLEAR} m clear inside each door.
 ITEM TYPES: ${Object.entries(T).map(([k,v]) => `${k} (${v.name}, default ${v.w}×${v.h})`).join("; ")}.
 Solid items must not overlap each other. Floor markings (bay, mat, zone, doxarea, note) may sit under vans/items.

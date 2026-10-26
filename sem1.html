@@ -448,7 +448,7 @@ const WORLD = {x:-4, y:-4, w:150, h:64};
 const OUTLINE = "M0 0H123.5V8.7H140V42H0Z";
 const YARD = [{x:30, y:42, w:110, h:14}, {x:123.5, y:0, w:16.5, h:8.7}]; // paved yard and truck apron outside the walls
 const RECTS = [{x:0,y:0,w:123.5,h:42},{x:109.5,y:8.7,w:30.5,h:33.3}, ...YARD];
-const BELT = {x:15.4, y:20.7, w:85.3, h:1.2};
+const BELT = {x:15.4, y:20.58, w:85.3, h:1.44}; // 20% wider than traced (was y 20.7, h 1.2)
 const CLEAR = 3; // keep-clear depth in front of doors
 // doors run along a wall from (x1,y1) to (x2,y2); (nx,ny) points into the building
 const DOORS = [
@@ -469,8 +469,8 @@ const doorZone = d => { const c = d.clear || CLEAR;
 
 /* ───────── Item types ───────── */
 const T = {
-  gcan:      {name:"G-Can",            desc:"Big cage · fixed size",    w:5.6, h:4, solid:true, fixed:true},
-  doxcage:   {name:"Dox cage",         desc:"Small cage",               w:2.4, h:2.4, solid:true},
+  gcan:      {name:"G-Can",            desc:"Big cage · fixed size",    w:4.7, h:3.2, solid:true, fixed:true},
+  doxcage:   {name:"Dox cage",         desc:"Small cage",               w:2.04, h:2.04, solid:true},
   doxarea:   {name:"Dox area",         desc:"Floor zone",               w:10,  h:8,   solid:false},
   forklift:  {name:"Forklift",         desc:"Parking spot",             w:4.4, h:1.7, solid:true},
   van:       {name:"Van",              desc:"Vehicle",                  w:2.1, h:5.6, solid:true},
@@ -507,9 +507,9 @@ function baseline(){
   const seg = (type, x1, y1, x2, y2, W, label) => { const L = Math.hypot(x2-x1, y2-y1), w = rd(L + W*.6);
     return add(type, (x1+x2)/2 - w/2, (y1+y2)/2 - W/2, {w, h:W, r:Math.round(Math.atan2(y2-y1, x2-x1)*180/Math.PI), label}); };
   // rubber mats either side of the belt and round its right end
-  add("mat", 15.3, 17.9, {w:87.2, h:2.8, label:"Rubber mat"});
-  add("mat", 15.4, 21.9, {w:87.1, h:2.7, label:"Rubber mat"});
-  add("mat", 100.7, 20.7, {w:1.8, h:1.2, label:""});
+  add("mat", 15.3, 17.9, {w:87.2, h:2.68, label:"Rubber mat"});
+  add("mat", 15.4, 22.02, {w:87.1, h:2.58, label:"Rubber mat"});
+  add("mat", 100.7, 20.58, {w:1.8, h:1.44, label:""});
   // north side: mat lane every 5 m, a van bay between each pair
   const vans = []; let v = 0;
   for (let k = 0; k < 15; k++) add("mat", 15.1 + 5*k, 9, {h:8.9, label:"Mats"});
@@ -564,7 +564,7 @@ function baseline(){
 }
 
 /* ───────── Layout upgrades (v2: walkways, crossings, loading zone, drivers, operation agents) ───────── */
-const LAYOUT_V = 2;
+const LAYOUT_V = 3;
 function walkwaySet(){
   const W = 1.6, out = [];
   const rect = (id, type, x, y, w, h, label) => out.push({id, type, x, y, w, h, r:0, label, locked:false, note:"", group:"walkways"});
@@ -593,6 +593,16 @@ function migrate(list, fromV = 1){
       if (i.group === "walkways" || i.group === "routes") i.group = "";            // every path and arrow moves on its own
       if (i.type === "gcan" && i.w === 10.2 && i.h === 3.4) resize(i, T.gcan.w, T.gcan.h);   // yellow G-can size
       if (i.type === "truck" && i.w === 2.6 && i.h === 16) resize(i, T.truck.w, T.truck.h);  // trucks 15% bigger
+    });
+  }
+  if (fromV < 3){
+    const near = (a, b) => Math.abs(a - b) < .05;
+    out.forEach(i => {
+      if (i.type === "doxcage"){ const cx = i.x + i.w/2, cy = i.y + i.h/2; i.w = r2(i.w*.85); i.h = r2(i.h*.85); i.x = r2(cx - i.w/2); i.y = r2(cy - i.h/2); } // 15% smaller
+      if (i.type !== "mat") return;  // belt 20% wider (y 20.7–21.9 -> 20.58–22.02): trim the mats beside it
+      if (near(i.x, 100.7) && near(i.y, 20.7)){ i.y = 20.58; i.h = 1.44; }
+      else if (i.w > 10 && near(i.y + i.h, 20.7)) i.h = r2(i.h - .12);
+      else if (i.w > 10 && near(i.y, 21.9)){ i.y = 22.02; i.h = r2(i.h - .12); }
     });
   }
   return out;
@@ -1383,7 +1393,7 @@ function setupAI(sample){
     const prompt =
 `You rearrange items on a parcel depot floor plan. Units are metres. x grows to the right, y grows downward ("up/top/north" = smaller y, toward the roller doors).
 BUILDING: main hall x 0–123.5, y 0–42; an annex room x 109.5–140, y 8.7–42 (internal walls at x 109.5 and x 126). Outside, a paved yard x 30–140, y 42–56 and a truck apron x 123.5–140, y 0–8.7 may also hold items. Nothing else may sit outside.
-FIXED CONVEYOR BELT (never place anything on it): x 15.4–100.7, y 20.7–21.9, with rubber mats either side. "Left end" ≈ x 15, "right end" ≈ x 100; "north side" = y < 20.7 (van bays y 9–18); "south side" = y > 21.9 (van bays y 24.6–32.6).
+FIXED CONVEYOR BELT (never place anything on it): x 15.4–100.7, y 20.58–22.02, with rubber mats either side. "Left end" ≈ x 15, "right end" ≈ x 100; "north side" = y < 20.58 (van bays y 9–18); "south side" = y > 22.02 (van bays y 24.6–32.6).
 DOORS: ${DOORS.map(d => `${d.name} at x ${d.x1}${d.x1 !== d.x2 ? "–" + d.x2 : ""}, y ${d.y1}${d.y1 !== d.y2 ? "–" + d.y2 : ""}`).join("; ")}. Keep the marked clearance (${CLEAR} m at doors, 2.2 m at the electrical board). Yellow walkways and crossings are floor paths: keep solid items off them where possible.
 ITEM TYPES: ${Object.entries(T).map(([k,v]) => `${k} (${v.name}, default ${v.w}×${v.h})`).join("; ")}.
 Solid items must not overlap each other. Floor markings (bay, mat, zone, doxarea, note) may sit under vans/items.

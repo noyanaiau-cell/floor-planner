@@ -1,5 +1,5 @@
-// Floor Planner offline cache — version 94a12ba7b351
-const CACHE = "floor-planner-94a12ba7b351";
+// Floor Planner offline cache — version 56dc43f9c4c0
+const CACHE = "floor-planner-56dc43f9c4c0";
 const FILES = ["./", "index.html", "sem1.html", "sem2.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
